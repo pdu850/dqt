@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dancing Queen</title>
+<style>
+body {
+  background-color: white;
+  font-family: sans-serif;
+  overflow: hidden; /* Prevent scrolling */
+  touch-action: manipulation; /* Prevent default touch behavior */
+}
+#score {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: none; /* Hide score initially */
+}
+#game-container {
+  width: 500px;
+  height: 600px;
+  margin: 50px auto;
+  position: relative;
+  overflow: hidden;
+}
+.arrow {
+  width: 50px;
+  height: 50px;
+  position: absolute;
+}
+.left {
+  background-image: url('left-arrow.png'); /* Replace with actual image */
+  left: 100px; /* Column for left arrow */
+}
+.up {
+  background-image: url('up-arrow.png'); /* Replace with actual image */
+  left: 200px; /* Column for up arrow */
+}
+.down {
+  background-image: url('down-arrow.png'); /* Replace with actual image */
+  left: 300px; /* Column for down arrow */
+}
+.right {
+  background-image: url('right-arrow.png'); /* Replace with actual image */
+  left: 400px; /* Column for right arrow */
+}
+#character {
+  width: 60px;
+  height: 157px;
+  background-image: url('Colin1.png'); /* Start with Colin1.png */
+  position: absolute;
+  bottom: 100px;
+  left: 225px;
+}
+.static-arrow {
+  position: absolute;
+  bottom: 0;
+  width: 50px;
+  height: 50px;
+}
+.static-left {
+  background-image: url('left-arrow.png'); /* Replace with actual image */
+  left: 100px;
+}
+.static-up {
+  background-image: url('up-arrow.png'); /* Replace with actual image */
+  left: 200px;
+}
+.static-down {
+  background-image: url('down-arrow.png'); /* Replace with actual image */
+  left: 300px;
+}
+.static-right {
+  background-image: url('right-arrow.png'); /* Replace with actual image */
+  left: 400px;
+}
+#start-screen {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 20px;
+  border-radius: 5px;
+}
+</style>
+</head>
+<body>
+  <h1>Dancing Queen</h1>
+  <div id="score">Score: 0</div>
+
+  <div id="game-container">
+    <div id="character"></div>
+    <div class="static-arrow static-left"></div>
+    <div class="static-arrow static-up"></div>
+    <div class="static-arrow static-down"></div>
+    <div class="static-arrow static-right"></div>
+    <div id="start-screen">
+      <button id="start-button">Start Game</button>
+    </div>
+  </div>
+
+  <audio id="music" src="DQ.mp3" loop></audio>
+
+  <script>
+    const gameContainer = document.getElementById('game-container');
+    const character = document.getElementById('character');
+    const scoreDisplay = document.getElementById('score');
+    const music = document.getElementById('music');
+    const startScreen = document.getElementById('start-screen');
+    const startButton = document.getElementById('start-button');
+    let score = 0;
+    let gameTime = 3 * 60 * 1000; // 3 minutes in milliseconds
+    let startTime;
+
+    const arrows = ['left', 'up', 'down', 'right'];
+    const colinImages = ['Colin1.png', 'Colin2.png', 'Colin3.png'];
+    function createArrow() {
+      const arrow = document.createElement('div');
+      const direction = arrows[Math.floor(Math.random() * arrows.length)];
+      arrow.classList.add('arrow', direction);
+      arrow.style.top = '-50px';
+      gameContainer.appendChild(arrow);
+
+      let arrowInterval = setInterval(() => {
+        let currentTop = parseInt(arrow.style.top);
+        arrow.style.top = `${currentTop + 1}px`;
+        if (currentTop > gameContainer.offsetHeight - 50) { // Check if it reached the bottom
+          clearInterval(arrowInterval);
+          arrow.remove();
+        }
+      }, 5); // Adjust speed here
+    }
+
+    function moveCharacter() {
+      let x = parseInt(character.style.left);
+      let y = parseInt(character.style.bottom);
+      const dx = Math.random() < 0.5 ? -1 : 1;
+      const dy = Math.random() < 0.5 ? -1 : 1;
+      x += dx * 5;
+      y += dy * 5;
+      if (x < 0) x = 0;
+      if (x > gameContainer.offsetWidth - 50) x = gameContainer.offsetWidth - 50;
+      if (y < 0) y = 0;
+      if (y > gameContainer.offsetHeight - 50) y = gameContainer.offsetHeight - 50;
+      character.style.left = `${x}px`;
+      character.style.bottom = `${y}px`;
+    }
+
+    function checkKey(e) {
+      const arrowsToCheck = document.querySelectorAll('.arrow');
+      arrowsToCheck.forEach(arrow => {
+        const rect = arrow.getBoundingClientRect();
+        if (rect.bottom >= gameContainer.offsetHeight - 50) { // Check if arrow is at the bottom
+          const key = e.key || e.target.dataset.direction; // Get key from keyboard or data attribute
+          if (
+            (key === 'ArrowLeft' && arrow.classList.contains('left')) ||
+            (key === 'ArrowUp' && arrow.classList.contains('up')) ||
+            (key === 'ArrowDown' && arrow.classList.contains('down')) ||
+            (key === 'ArrowRight' && arrow.classList.contains('right'))
+          ) {
+            score += 10;
+            scoreDisplay.textContent = `Score: ${score}`;
+            arrow.remove();
+            // Randomly move the character
+            character.style.left = `${Math.random() * (gameContainer.offsetWidth - 50)}px`;
+            character.style.bottom = `${Math.random() * (gameContainer.offsetHeight - 50)}px`;
+
+            // Randomly change the Colin image
+            const randomImage = colinImages[Math.floor(Math.random() * colinImages.length)];
+            character.style.backgroundImage = `url(${randomImage})`;
+          }
+        }
+      });
+      e.preventDefault(); // Prevent default scrolling behavior
+    }
+
+    function startGame() {
+      startScreen.style.display = 'none'; // Hide the start screen
+      scoreDisplay.style.display = 'block'; // Show the score
+      startTime = Date.now();
+      setInterval(createArrow, 1000); // Adjust frequency here
+      setInterval(moveCharacter, 50); // Adjust character movement speed here
+      document.addEventListener('keydown', checkKey);
+
+      // Add touch event listeners to static arrows
+      const staticArrows = document.querySelectorAll('.static-arrow');
+      staticArrows.forEach(arrow => {
+        arrow.addEventListener('touchstart', checkKey);
+      });
+
+      let gameInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        if (elapsed >= gameTime) {
+          clearInterval(gameInterval);
+          alert(`Game Over! Final Score: ${score}`);
+          document.removeEventListener('keydown', checkKey);
+          staticArrows.forEach(arrow => {
+            arrow.removeEventListener('touchstart', checkKey);
+          });
+        }
+      }, 100);
+
+      music.play(); // Start music after clicking
+    }
+
+    // Start game when the button is clicked
+    startButton.addEventListener('click', startGame);
+  </script>
+</body>
+</html>
